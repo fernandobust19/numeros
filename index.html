@@ -5,6 +5,131 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <title>Tablero 6x6</title>
   <style>
+    /* --- Mejoras responsivas para móvil --- */
+    @media (max-width: 600px), (max-height: 600px) {
+      html, body {
+        height: 100vh;
+        min-height: 100vh;
+        overflow: hidden;
+      }
+      body {
+        padding: 0;
+        margin: 0;
+        overflow: hidden;
+      }
+      .container {
+        padding: 0;
+        min-height: 0;
+        flex: 1 1 auto;
+        justify-content: flex-start;
+      }
+      .top-bar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 8px 4px 4px 4px;
+        border-radius: 0 0 16px 16px;
+        font-size: 0.95em;
+      }
+      .top-bar > div, #restartBtn {
+        margin: 4px 0;
+        font-size: 1em;
+      }
+      .board {
+        width: 98vw;
+        height: 60vw;
+        max-width: 98vw;
+        max-height: 60vw;
+        min-width: 280px;
+        min-height: 170px;
+        margin: 0 auto;
+        gap: 2vw;
+        padding: 2vw;
+      }
+      .cell {
+        font-size: clamp(12px, 3vw, 18px);
+        border-radius: 5px;
+      }
+      .bottom-bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        border-radius: 12px 12px 0 0;
+        padding: 7px 2vw;
+        background: #e0e0e0ee;
+        z-index: 20;
+        box-shadow: 0 -2px 8px #0002;
+        gap: 8px;
+      }
+      .container {
+        margin-bottom: 60px; /* espacio para la barra inferior */
+      }
+      .game-over {
+        font-size: clamp(18px, 6vw, 32px);
+        padding: 10px 10vw;
+      }
+      .message-box {
+        font-size: 0.95em;
+        padding: 10px 10vw;
+      }
+    }
+
+    @media (orientation: landscape) and (max-width: 900px) {
+      .container {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: center;
+        min-height: 0;
+        margin-bottom: 0;
+      }
+      .board {
+        width: 60vw;
+        height: 90vw;
+        max-width: 60vw;
+        max-height: 90vw;
+        min-width: 180px;
+        min-height: 120px;
+      }
+      .bottom-bar {
+        position: static;
+        width: 100vw;
+        border-radius: 0;
+        margin: 0;
+        padding: 7px 2vw;
+      }
+    }
+    /* Animación para merge */
+    .merge-anim {
+      animation: mergePop 0.4s cubic-bezier(.68,-0.55,.27,1.55);
+    }
+    @keyframes mergePop {
+      0% { transform: scale(1); box-shadow: 0 0 0 #fff0; }
+      60% { transform: scale(1.25); box-shadow: 0 0 18px #fff8; }
+      100% { transform: scale(1); box-shadow: 0 0 0 #fff0; }
+    }
+
+    /* Animación para level up */
+    .levelup-anim {
+      animation: levelUpFlash 0.8s cubic-bezier(.68,-0.55,.27,1.55);
+    }
+    @keyframes levelUpFlash {
+      0% { box-shadow: 0 0 0 0 #43cea2; }
+      40% { box-shadow: 0 0 40px 18px #43cea2cc; }
+      100% { box-shadow: 0 0 0 0 #43cea200; }
+    }
+
+    /* Animación para game over */
+    .gameover-anim {
+      animation: gameOverShake 1.2s cubic-bezier(.36,.07,.19,.97);
+    }
+    @keyframes gameOverShake {
+      10%, 90% { transform: translate(-50%, -50%) translateX(-2px); }
+      20%, 80% { transform: translate(-50%, -50%) translateX(4px); }
+      30%, 50%, 70% { transform: translate(-50%, -50%) translateX(-8px); }
+      40%, 60% { transform: translate(-50%, -50%) translateX(8px); }
+      100% { transform: translate(-50%, -50%) translateX(0); }
+    }
     /* Basic reset and font */
     * {
       box-sizing: border-box;
@@ -12,50 +137,60 @@
 
     body {
       margin: 0;
-      font-family: 'Inter', sans-serif; /* Using Inter font */
+      font-family: 'Montserrat', 'Inter', sans-serif;
       display: flex;
       flex-direction: column;
       height: 100vh;
-      overflow: hidden; /* Prevent body scrolling */
-      background-color: #f0f0f0; /* Light background for the whole page */
+      overflow: hidden;
+      background: linear-gradient(135deg, #232526 0%, #414345 100%);
+      /* Sutil animación de fondo */
+      animation: bgmove 20s linear infinite alternate;
+    }
+    @keyframes bgmove {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 100% 50%; }
     }
 
     /* Top bar for game info and controls */
     .top-bar {
       display: flex;
-      flex-direction: row; /* Changed to row for horizontal layout */
+      flex-direction: row;
       align-items: center;
-      justify-content: space-around; /* Distribute items evenly */
-      flex-wrap: wrap; /* Allow items to wrap on smaller screens */
-      padding: 15px;
-      background-color: #e0e0e0; /* Slightly darker than body */
-      border-bottom: 2px solid #ccc;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      border-radius: 0 0 15px 15px; /* Rounded bottom corners */
+      justify-content: space-around;
+      flex-wrap: wrap;
+      padding: 18px 24px;
+      background: rgba(255,255,255,0.12);
+      border-bottom: 2px solid #222;
+      box-shadow: 0 4px 24px 0 rgba(0,0,0,0.18);
+      border-radius: 0 0 24px 24px;
+      backdrop-filter: blur(8px);
     }
 
     .top-bar > div {
-      margin: 8px 15px; /* Adjusted margin for horizontal spacing */
-      font-size: 1.1em;
-      font-weight: bold;
-      color: #333;
-      white-space: nowrap; /* Prevent text from wrapping within its div */
+      margin: 8px 18px;
+      font-size: 1.18em;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.5px;
+      text-shadow: 0 2px 8px #0008;
+      white-space: nowrap;
     }
 
     /* Message for "No hay movimientos posibles" */
-    #noMovesMessage {
-        margin-top: 10px;
-        font-size: 1.2em;
-        font-weight: bold;
-        color: #D32F2F; /* Red color for warning */
-        background-color: #FFEBEE; /* Light red background */
-        padding: 8px 15px;
-        border-radius: 10px;
-        border: 1px solid #EF9A9A;
-        display: none; /* Hidden by default */
-        text-align: center;
-        width: 100%; /* Ensure it takes full width for better visibility */
-    }
+  #noMovesMessage {
+    margin-top: 10px;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(220,40,40,0.85);
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: 1.5px solid #ffb3b3;
+    display: none;
+    text-align: center;
+    width: 100%;
+    box-shadow: 0 2px 12px #c00a;
+  }
 
     /* Styles for the container of star buttons to make them horizontal */
     #comodines {
@@ -66,51 +201,49 @@
     }
 
     /* Star buttons for power-ups */
-    .star-btn, .hint-btn { /* Added .hint-btn here */
-      font-size: 28px; /* Larger icon */
-      padding: 8px 16px;
+    .star-btn, .hint-btn {
+      font-size: 28px;
+      padding: 10px 20px;
       cursor: pointer;
-      background-color: #fdd835; /* Yellow for star */
-      color: #333;
-      border: 2px solid #fbc02d; /* Darker yellow border */
-      border-radius: 20px; /* More rounded */
-      box-shadow: 2px 2px 8px rgba(0,0,0,0.3); /* Stronger shadow */
-      transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
-      margin: 0 6px; /* Adjusted margin for individual buttons */
-      outline: none; /* Remove outline on focus */
-      display: flex; /* For aligning text and count */
+      background: linear-gradient(135deg, #ffe259 0%, #ffa751 100%);
+      color: #222;
+      border: none;
+      border-radius: 22px;
+      box-shadow: 0 2px 12px #ffb30055, 0 1.5px 0 #fff8 inset;
+      transition: transform 0.18s, box-shadow 0.18s, background 0.18s;
+      margin: 0 8px;
+      outline: none;
+      display: flex;
       align-items: center;
       justify-content: center;
-      gap: 5px; /* Space between text and count */
+      gap: 7px;
+      font-family: inherit;
     }
 
-    .hint-btn { /* Specific style for hint button */
-        background-color: #2196F3; /* Blue for hint */
-        color: white;
-        border: 2px solid #1976D2; /* Darker blue border */
-    }
+  .hint-btn {
+    background: linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
+    color: #fff;
+    box-shadow: 0 2px 12px #43cea288, 0 1.5px 0 #fff8 inset;
+  }
 
-    .star-btn:hover {
-      transform: scale(1.15); /* More pronounced hover effect */
-      background-color: #ffeb3b; /* Lighter yellow on hover */
-    }
-    .hint-btn:hover { /* Hover for hint button */
-        transform: scale(1.15);
-        background-color: #64B5F6; /* Lighter blue on hover */
+    .star-btn:hover, .hint-btn:hover {
+      transform: scale(1.13);
+      filter: brightness(1.12) drop-shadow(0 0 8px #fff6);
+      box-shadow: 0 4px 18px #fff8, 0 2px 16px #ffb30055;
     }
 
     .star-btn:active, .hint-btn:active {
-      transform: scale(1.05); /* Slight press effect */
-      box-shadow: 1px 1px 4px rgba(0,0,0,0.3);
+      transform: scale(0.98);
+      box-shadow: 0 1px 2px #0006;
     }
 
-    .star-btn:disabled, .hint-btn:disabled { /* Disabled style for both */
-      background-color: #bdbdbd; /* Greyed out */
-      color: #757575;
-      border: 2px solid #9e9e9e;
+    .star-btn:disabled, .hint-btn:disabled {
+      background: #444a;
+      color: #bbb;
       cursor: not-allowed;
       box-shadow: none;
-      transform: scale(1); /* No hover effect when disabled */
+      transform: scale(1);
+      opacity: 0.7;
     }
 
     /* Restart button */
@@ -146,60 +279,82 @@
       align-items: center;
       justify-content: center;
       position: relative;
-      padding: 10px; /* Padding around the board */
+      padding: 18px 0 10px 0;
+      min-height: 0;
     }
 
     /* Game board grid */
     .board {
       display: grid;
       grid-template-columns: repeat(6, 1fr);
-      gap: 4px; /* Slightly larger gap for better visual separation */
-      width: 95vmin; /* Use vmin for better responsiveness on smaller screens */
+      gap: 7px;
+      width: 95vmin;
       height: 95vmin;
-      max-width: 500px; /* Max width for desktop */
-      max-height: 500px; /* Max height for desktop */
+      max-width: 520px;
+      max-height: 520px;
       position: relative;
-      background-color: #ccc; /* Background for the gaps */
-      border-radius: 15px; /* Rounded corners for the board */
-      padding: 4px; /* Padding to show the gap background around edges */
-      box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* Shadow for depth */
+      background: rgba(255,255,255,0.08);
+      border-radius: 22px;
+      padding: 7px;
+      box-shadow: 0 8px 32px 0 #0007, 0 1.5px 0 #fff8 inset;
+      backdrop-filter: blur(4px);
     }
 
     /* Individual cells */
     .cell {
       width: 100%;
-      aspect-ratio: 1; /* Keep cells square */
-      border: 1px solid #aaa; /* Lighter border */
+      aspect-ratio: 1;
+      border: none;
       text-align: center;
       line-height: 100%;
-      font-size: clamp(18px, 5vw, 30px); /* Responsive font size */
-      font-weight: bold;
-      color: #333;
-      background-color: white;
+      font-size: clamp(20px, 5vw, 34px);
+      font-weight: 700;
+      color: #222;
+      background: rgba(255,255,255,0.85);
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 8px; /* Rounded corners for cells */
-      transition: background-color 0.1s ease-in-out, transform 0.1s ease-in-out, border 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Add border and box-shadow transition */
-      user-select: none; /* Prevent text selection */
-      -webkit-user-select: none; /* For Safari */
-      -moz-user-select: none; /* For Firefox */
-      -ms-user-select: none; /* For IE/Edge */
-      touch-action: none; /* Prevent default touch actions like scrolling */
+      border-radius: 14px;
+      box-shadow: 0 2px 12px #0002, 0 1.5px 0 #fff8 inset;
+      transition: background 0.18s, transform 0.13s, box-shadow 0.18s, border 0.2s;
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      touch-action: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .cell:not(.blocked-cell):hover {
+      box-shadow: 0 4px 24px #fff8, 0 2px 16px #ffb30033;
+      z-index: 2;
+      filter: brightness(1.08);
+      cursor: pointer;
+    }
+    .blocked-cell {
+      background: repeating-linear-gradient(135deg, #232526 0 8px, #414345 8px 16px);
+      color: #fff;
+      font-size: 2em;
+      opacity: 0.85;
+      box-shadow: 0 2px 12px #0008;
+      pointer-events: none;
+      filter: grayscale(0.5) brightness(0.7);
     }
 
     /* Style for a cell selected by the Plus wildcard (now just a visual highlight for dragging) */
     .cell.selected-for-plus {
-      border: 3px solid #FFC107; /* Highlight border */
-      box-shadow: 0 0 10px rgba(255,193,7,0.5); /* Subtle glow */
-      transform: scale(1.05); /* Slightly enlarge */
+      border: 3px solid #FFC107;
+      box-shadow: 0 0 18px 4px #ffe082cc, 0 0 10px #fff8;
+      transform: scale(1.08);
+      z-index: 3;
     }
 
     /* Dragover highlight styling */
-    .cell.dragover {
-        border: 4px solid #4CAF50 !important; /* Green border for dragover */
-        box-shadow: 0 0 15px rgba(76, 175, 80, 0.8); /* Green glow */
-    }
+  .cell.dragover {
+    border: 4px solid #43cea2 !important;
+    box-shadow: 0 0 22px 4px #43cea2cc, 0 0 10px #fff8;
+    z-index: 4;
+  }
 
     /* Cell colors based on number */
     .num-1 { background-color: #EF9A9A; } /* Light Red */
@@ -296,10 +451,11 @@
     }
 
     /* Hint highlight styling */
-    .hint-highlight {
-        border: 4px solid #4CAF50 !important; /* Green border for hint */
-        box-shadow: 0 0 15px rgba(76, 175, 80, 0.8); /* Green glow */
-    }
+  .hint-highlight {
+    border: 4px solid #43cea2 !important;
+    box-shadow: 0 0 22px 4px #43cea2cc, 0 0 10px #fff8;
+    z-index: 5;
+  }
 
     /* Game Over message */
     .game-over {
@@ -307,16 +463,23 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: clamp(30px, 10vw, 60px); /* Responsive font size */
-      font-weight: bold;
-      color: #D32F2F; /* Dark Red */
-      text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+      font-size: clamp(32px, 10vw, 64px);
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 2px 16px #c00a, 0 1.5px 0 #fff8 inset;
       z-index: 10;
       display: none;
-      background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
-      padding: 20px 40px;
-      border-radius: 15px;
-      border: 3px solid #D32F2F;
+      background: rgba(30,30,30,0.92);
+      padding: 28px 60px;
+      border-radius: 22px;
+      border: 3px solid #ffb3b3;
+      box-shadow: 0 8px 32px #c00a, 0 1.5px 0 #fff8 inset;
+      animation: popin 0.7s cubic-bezier(.68,-0.55,.27,1.55);
+    }
+    @keyframes popin {
+      0% { transform: scale(0.7) translate(-50%,-50%); opacity: 0; }
+      80% { transform: scale(1.1) translate(-50%,-50%); opacity: 1; }
+      100% { transform: scale(1) translate(-50%,-50%); opacity: 1; }
     }
 
     /* Dragging clone styling */
@@ -340,23 +503,26 @@
     }
 
     /* Custom Message Box */
-    .message-box {
-        position: fixed;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        background-color: #424242; /* Dark grey background */
-        color: white;
-        padding: 25px 40px;
-        border-radius: 15px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-        font-size: 1.3em;
-        font-weight: bold;
-        text-align: center;
-        z-index: 100; /* Above everything else */
-        display: none; /* Hidden by default */
-        border: 2px solid #616161; /* Slightly lighter border */
-    }
+  .message-box {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255,255,255,0.13);
+    color: #fff;
+    padding: 28px 48px;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px #000a, 0 1.5px 0 #fff8 inset;
+    font-size: 1.25em;
+    font-weight: 700;
+    text-align: center;
+    z-index: 100;
+    display: none;
+    border: 2px solid #fff3;
+    backdrop-filter: blur(6px);
+    letter-spacing: 0.5px;
+    animation: popin 0.7s cubic-bezier(.68,-0.55,.27,1.55);
+  }
 
     /* New bottom bar for hint button */
     .bottom-bar {
@@ -431,9 +597,10 @@
       }
     }
   </style>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Inter:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
+  <!-- Efectos de sonido -->
   <div class="top-bar">
     <div>Nivel: <span id="levelIndicator">1</span></div>
     <div>Movimientos: <span id="moveCount">0</span></div>
@@ -463,6 +630,16 @@
   <div id="messageBox" class="message-box"></div>
 
   <script>
+    // --- Sonidos ---
+      const sndMerge = document.getElementById('snd-merge');
+      const sndLevelup = document.getElementById('snd-levelup');
+      const sndGameover = document.getElementById('snd-gameover');
+
+      function playSound(audio) {
+        if (!audio) return;
+        audio.currentTime = 0;
+        audio.play();
+      }
     // Get references to DOM elements
     const board = document.querySelector('.board');
     const levelIndicatorEl = document.getElementById('levelIndicator');
@@ -488,6 +665,17 @@
     let currentLevelProgressSum = 0; // Cumulative sum of merges > 60 for current level
     let hintCount = 3; // Initial hint count
     let plusGeneratedCountThisLevel = 0; // Tracks '+' generated in current level
+    let blockedCells = []; // Índices de celdas bloqueadas para el nivel actual
+
+    // Configuración de dificultad por nivel
+    function getLevelConfig(lvl) {
+      return {
+        blocked: Math.min(Math.floor(lvl / 3), 6), // Máx 6 celdas bloqueadas
+        stars: Math.max(3 - Math.floor(lvl / 7), 1), // Menos comodines a más nivel
+        hints: Math.max(3 - Math.floor(lvl / 10), 1), // Menos pistas a más nivel
+        minNum: Math.min(lvl, 20), // Números iniciales más altos
+      };
+    }
 
     // Define thresholds for level completion (cumulative sum of merges > 60) for 30 levels
     // The first threshold is 60. Each subsequent threshold is double the previous one.
@@ -789,6 +977,8 @@
           } else {
               // No moves AND no power-ups. Game is truly over.
               gameOverEl.style.display = 'block'; // Show game over message
+              gameOverEl.classList.add('gameover-anim');
+              setTimeout(() => gameOverEl.classList.remove('gameover-anim'), 1200);
               setTimeout(initGame, 6000); // Restart after 6 seconds
               return true; // Game IS over
           }
@@ -903,9 +1093,14 @@
             mergedValueForProgress = newValue;
         }
 
-        endCell.textContent = newValue; // Update destination cell's value
-        setColor(endCell);               // Update destination cell's color
-        updateHighest(newValue);         // Update highest number achieved
+
+  // Animación visual de merge
+  endCell.classList.add('merge-anim');
+  setTimeout(() => endCell.classList.remove('merge-anim'), 400);
+
+  endCell.textContent = newValue;
+  setColor(endCell);
+  updateHighest(newValue);
 
         // Replace the source cell with a new random number based on current level rules
         startCell.textContent = getRandomNumber();
@@ -1067,17 +1262,22 @@
      * Replaces numbers that are no longer allowed in the new level.
      */
     function updateBoardForNewLevel() {
-        const cells = Array.from(document.querySelectorAll('.cell'));
-        cells.forEach(cell => {
-            const cellValue = parseInt(cell.textContent);
-            // If the cell contains a number that is now forbidden for the current level,
-            // replace it with a new random number valid for this level.
-            if (!isNaN(cellValue) && isNumberForbiddenForCurrentLevel(cellValue)) {
-                cell.textContent = getRandomNumber();
-                setColor(cell);
-                updateHighest(cell.textContent);
-            }
-        });
+    // Animación visual de subida de nivel
+    const boardEl = document.querySelector('.board');
+    boardEl.classList.add('levelup-anim');
+    setTimeout(() => boardEl.classList.remove('levelup-anim'), 800);
+
+    const cells = Array.from(document.querySelectorAll('.cell'));
+    cells.forEach(cell => {
+      const cellValue = parseInt(cell.textContent);
+      // If the cell contains a number that is now forbidden for the current level,
+      // replace it with a new random number valid for this level.
+      if (!isNaN(cellValue) && isNumberForbiddenForCurrentLevel(cellValue)) {
+        cell.textContent = getRandomNumber();
+        setColor(cell);
+        updateHighest(cell.textContent);
+      }
+    });
     }
 
     /**
@@ -1140,54 +1340,43 @@
     /**
      * Creates a new cell element and attaches touch event listeners.
      */
-    function createCell() {
+    function createCell(idx) {
       const cell = document.createElement('div');
       cell.classList.add('cell');
-      cell.textContent = getRandomNumber(); // Assign initial random number based on current level
-      setColor(cell);                      // Set initial color
-      updateHighest(cell.textContent);     // Update highest number
-
-      board.appendChild(cell); // Add cell to the board
-
+      // Si la celda está bloqueada, la marcamos
+      if (blockedCells.includes(idx)) {
+        cell.textContent = '⛔';
+        cell.classList.add('blocked-cell');
+        cell.style.background = 'repeating-linear-gradient(135deg, #333 0 8px, #666 8px 16px)';
+        cell.style.color = '#fff';
+        cell.style.fontSize = '2em';
+        board.appendChild(cell);
+        return cell;
+      }
+      cell.textContent = getRandomNumber();
+      setColor(cell);
+      updateHighest(cell.textContent);
+      board.appendChild(cell);
+      // ...eventos touch y mouse igual que antes...
       // --- Touch Event Listeners ---
-
-      // Touch Start: Initiates drag
       cell.addEventListener('touchstart', (e) => {
-        // Only start a drag if no other drag is active or if it's the first touch
-        if (draggedCell || e.touches.length > 1) return;
-
-        e.preventDefault(); // Prevent scrolling/zooming on touch start
-
-        draggedCell = cell; // Store the original cell
-        dragTouchId = e.touches[0].identifier; // Store the ID of the touch that started the drag
-
-        // Add highlight to the original cell if it's a '+' wildcard
-        if (draggedCell.textContent === '+') {
-            draggedCell.classList.add('selected-for-plus');
-        }
-
-        // Create a clone for visual dragging feedback
+        if (draggedCell || e.touches.length > 1 || cell.classList.contains('blocked-cell')) return;
+        e.preventDefault();
+        draggedCell = cell;
+        dragTouchId = e.touches[0].identifier;
+        if (draggedCell.textContent === '+') draggedCell.classList.add('selected-for-plus');
         clone = cell.cloneNode(true);
         const rect = cell.getBoundingClientRect();
         const boardRect = board.getBoundingClientRect();
-
-        // Position the clone relative to the board container
         clone.style.top = (rect.top - boardRect.top) + "px";
         clone.style.left = (rect.left - boardRect.left) + "px";
-        clone.classList.add('dragging'); // Apply dragging styles
-        board.appendChild(clone); // Add clone to the board container
-
-        // Calculate offset from touch point to cell's top-left corner
+        clone.classList.add('dragging');
+        board.appendChild(clone);
         offsetX = e.touches[0].clientX - rect.left;
         offsetY = e.touches[0].clientY - rect.top;
-      }, { passive: false }); // Use passive: false to allow preventDefault
-
-      // Touch Move: Updates clone position
+      }, { passive: false });
       cell.addEventListener('touchmove', (e) => {
-        // Only process if a drag is active and it's the correct touch
         if (!clone || draggedCell !== cell) return;
-
-        // Find the touch that matches the dragTouchId
         let currentTouch = null;
         for (let i = 0; i < e.touches.length; i++) {
           if (e.touches[i].identifier === dragTouchId) {
@@ -1195,37 +1384,24 @@
             break;
           }
         }
-
         if (currentTouch) {
-          e.preventDefault(); // Prevent scrolling while dragging
+          e.preventDefault();
           const boardRect = board.getBoundingClientRect();
-          // Update clone's position relative to the board
           clone.style.left = (currentTouch.clientX - boardRect.left - offsetX) + "px";
           clone.style.top = (currentTouch.clientY - boardRect.top - offsetY) + "px";
-
-          // Add/remove dragover class for visual feedback
           const targetCell = document.elementFromPoint(currentTouch.clientX, currentTouch.clientY);
-          document.querySelectorAll('.cell').forEach(c => c.classList.remove('dragover')); // Clear all first
-
+          document.querySelectorAll('.cell').forEach(c => c.classList.remove('dragover'));
           if (targetCell && targetCell.classList.contains('cell') && targetCell !== draggedCell) {
             if (draggedCell.textContent === '+') {
-                // For '+' wildcard, highlight if it's a valid target for its special merge
-                if (canPlusWildcardMerge(draggedCell, targetCell)) {
-                    targetCell.classList.add('dragover');
-                }
+              if (canPlusWildcardMerge(draggedCell, targetCell)) targetCell.classList.add('dragover');
             } else if (isAdjacent(draggedCell, targetCell) && canCellsMerge(draggedCell, targetCell)) {
-              targetCell.classList.add('dragover'); // Only adjacent and mergeable in normal mode
+              targetCell.classList.add('dragover');
             }
           }
         }
-      }, { passive: false }); // Use passive: false to allow preventDefault
-
-      // Touch End: Ends drag and processes move
+      }, { passive: false });
       cell.addEventListener('touchend', (e) => {
-        // Only process if this cell is the one that was dragged
         if (draggedCell !== cell) return;
-
-        // Ensure the touch that started the drag has ended
         let endedTouch = null;
         for (let i = 0; i < e.changedTouches.length; i++) {
           if (e.changedTouches[i].identifier === dragTouchId) {
@@ -1233,36 +1409,75 @@
             break;
           }
         }
-
         if (endedTouch) {
-          // Get the element under the touch point where the touch ended
           const targetCell = document.elementFromPoint(endedTouch.clientX, endedTouch.clientY);
-
-          // Clear any dragover highlights
           document.querySelectorAll('.cell').forEach(c => c.classList.remove('dragover'));
-
-          // If the target is a cell and it's not the dragged cell itself
           if (targetCell && targetCell.classList.contains('cell') && targetCell !== draggedCell) {
             if (draggedCell.textContent === '+') {
               performPlusWildcardMove(draggedCell, targetCell);
             } else {
-              // Normal adjacent move
               moveCell(draggedCell, targetCell);
             }
           }
         }
-
-        // Clean up after drag ends, regardless of whether a merge happened
-        if (clone && board.contains(clone)) {
-            board.removeChild(clone);
-        }
-        if (draggedCell) {
-            draggedCell.classList.remove('selected-for-plus'); // Remove highlight from original cell
-        }
+        if (clone && board.contains(clone)) board.removeChild(clone);
+        if (draggedCell) draggedCell.classList.remove('selected-for-plus');
         clone = null;
         draggedCell = null;
-        dragTouchId = null; // Reset touch ID
+        dragTouchId = null;
       });
+      // --- Mouse Event Listeners (Desktop) ---
+      cell.addEventListener('mousedown', (e) => {
+        if (draggedCell || e.button !== 0 || cell.classList.contains('blocked-cell')) return;
+        e.preventDefault();
+        draggedCell = cell;
+        if (draggedCell.textContent === '+') draggedCell.classList.add('selected-for-plus');
+        clone = cell.cloneNode(true);
+        const rect = cell.getBoundingClientRect();
+        const boardRect = board.getBoundingClientRect();
+        clone.style.top = (rect.top - boardRect.top) + "px";
+        clone.style.left = (rect.left - boardRect.left) + "px";
+        clone.classList.add('dragging');
+        board.appendChild(clone);
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        function onMouseMove(ev) {
+          if (!clone || draggedCell !== cell) return;
+          const boardRect = board.getBoundingClientRect();
+          clone.style.left = (ev.clientX - boardRect.left - offsetX) + "px";
+          clone.style.top = (ev.clientY - boardRect.top - offsetY) + "px";
+          const targetCell = document.elementFromPoint(ev.clientX, ev.clientY);
+          document.querySelectorAll('.cell').forEach(c => c.classList.remove('dragover'));
+          if (targetCell && targetCell.classList.contains('cell') && targetCell !== draggedCell) {
+            if (draggedCell.textContent === '+') {
+              if (canPlusWildcardMerge(draggedCell, targetCell)) targetCell.classList.add('dragover');
+            } else if (isAdjacent(draggedCell, targetCell) && canCellsMerge(draggedCell, targetCell)) {
+              targetCell.classList.add('dragover');
+            }
+          }
+        }
+        function onMouseUp(ev) {
+          if (draggedCell !== cell) return;
+          const targetCell = document.elementFromPoint(ev.clientX, ev.clientY);
+          document.querySelectorAll('.cell').forEach(c => c.classList.remove('dragover'));
+          if (targetCell && targetCell.classList.contains('cell') && targetCell !== draggedCell) {
+            if (draggedCell.textContent === '+') {
+              performPlusWildcardMove(draggedCell, targetCell);
+            } else {
+              moveCell(draggedCell, targetCell);
+            }
+          }
+          if (clone && board.contains(clone)) board.removeChild(clone);
+          if (draggedCell) draggedCell.classList.remove('selected-for-plus');
+          clone = null;
+          draggedCell = null;
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        }
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+      return cell;
     }
 
     /**
