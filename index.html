@@ -5,6 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <title>Tablero 6x6</title>
   <style>
+    /* Solo vertical: bloquear landscape y optimizar portrait */
+    @media screen and (orientation: landscape) {
+      body, html {
+        min-height: 100vh;
+        min-width: 100vw;
+        overflow: hidden;
+      }
+      .container, .board, .top-bar, .bottom-bar {
+        display: none !important;
+      }
+      body::after {
+        content: 'Por favor gira tu dispositivo para jugar en vertical';
+        display: flex;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: #232526;
+        color: #fff;
+        font-size: 1.5em;
+        font-weight: bold;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        text-align: center;
+        padding: 40px;
+      }
+    }
+
+    @media (max-width: 600px), (max-height: 900px) {
+      .board {
+        width: 92vw;
+        height: 55vw;
+        max-width: 92vw;
+        max-height: 55vw;
+        min-width: 220px;
+        min-height: 120px;
+        margin: 0 auto;
+        gap: 1.5vw;
+        padding: 1.5vw;
+      }
+      .container {
+        margin-bottom: 80px; /* más espacio para la barra inferior */
+      }
+      .bottom-bar {
+        padding: 10px 2vw 18px 2vw;
+        font-size: 0.98em;
+      }
+      .hint-btn, #ayuda span {
+        font-size: 1em;
+      }
+    }
     /* --- Mejoras responsivas para móvil --- */
     @media (max-width: 600px), (max-height: 600px) {
       html, body {
