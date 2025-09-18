@@ -1,0 +1,1360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Tablero 6x6</title>
+  <style>
+    /* Basic reset and font */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif; /* Using Inter font */
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden; /* Prevent body scrolling */
+      background-color: #f0f0f0; /* Light background for the whole page */
+    }
+
+    /* Top bar for game info and controls */
+    .top-bar {
+      display: flex;
+      flex-direction: row; /* Changed to row for horizontal layout */
+      align-items: center;
+      justify-content: space-around; /* Distribute items evenly */
+      flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+      padding: 15px;
+      background-color: #e0e0e0; /* Slightly darker than body */
+      border-bottom: 2px solid #ccc;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      border-radius: 0 0 15px 15px; /* Rounded bottom corners */
+    }
+
+    .top-bar > div {
+      margin: 8px 15px; /* Adjusted margin for horizontal spacing */
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #333;
+      white-space: nowrap; /* Prevent text from wrapping within its div */
+    }
+
+    /* Message for "No hay movimientos posibles" */
+    #noMovesMessage {
+        margin-top: 10px;
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #D32F2F; /* Red color for warning */
+        background-color: #FFEBEE; /* Light red background */
+        padding: 8px 15px;
+        border-radius: 10px;
+        border: 1px solid #EF9A9A;
+        display: none; /* Hidden by default */
+        text-align: center;
+        width: 100%; /* Ensure it takes full width for better visibility */
+    }
+
+    /* Styles for the container of star buttons to make them horizontal */
+    #comodines {
+        display: flex;
+        flex-direction: row; /* Arrange items horizontally */
+        gap: 10px; /* Space between star buttons */
+        margin: 8px 0; /* Keep consistent margin with other top-bar divs */
+    }
+
+    /* Star buttons for power-ups */
+    .star-btn, .hint-btn { /* Added .hint-btn here */
+      font-size: 28px; /* Larger icon */
+      padding: 8px 16px;
+      cursor: pointer;
+      background-color: #fdd835; /* Yellow for star */
+      color: #333;
+      border: 2px solid #fbc02d; /* Darker yellow border */
+      border-radius: 20px; /* More rounded */
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.3); /* Stronger shadow */
+      transition: transform 0.2s ease-in-out, background-color 0.2s ease-in-out;
+      margin: 0 6px; /* Adjusted margin for individual buttons */
+      outline: none; /* Remove outline on focus */
+      display: flex; /* For aligning text and count */
+      align-items: center;
+      justify-content: center;
+      gap: 5px; /* Space between text and count */
+    }
+
+    .hint-btn { /* Specific style for hint button */
+        background-color: #2196F3; /* Blue for hint */
+        color: white;
+        border: 2px solid #1976D2; /* Darker blue border */
+    }
+
+    .star-btn:hover {
+      transform: scale(1.15); /* More pronounced hover effect */
+      background-color: #ffeb3b; /* Lighter yellow on hover */
+    }
+    .hint-btn:hover { /* Hover for hint button */
+        transform: scale(1.15);
+        background-color: #64B5F6; /* Lighter blue on hover */
+    }
+
+    .star-btn:active, .hint-btn:active {
+      transform: scale(1.05); /* Slight press effect */
+      box-shadow: 1px 1px 4px rgba(0,0,0,0.3);
+    }
+
+    .star-btn:disabled, .hint-btn:disabled { /* Disabled style for both */
+      background-color: #bdbdbd; /* Greyed out */
+      color: #757575;
+      border: 2px solid #9e9e9e;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: scale(1); /* No hover effect when disabled */
+    }
+
+    /* Restart button */
+    #restartBtn {
+      font-size: 1.1em;
+      padding: 10px 20px;
+      margin-top: 10px;
+      background-color: #4CAF50; /* Green */
+      color: white;
+      border: 2px solid #388E3C; /* Darker green border */
+      border-radius: 20px;
+      cursor: pointer;
+      box-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+      transition: background-color 0.2s ease-in-out, transform 0.2s ease-in-out;
+      outline: none;
+    }
+
+    #restartBtn:hover {
+      background-color: #66BB6A; /* Lighter green on hover */
+      transform: scale(1.05);
+    }
+
+    #restartBtn:active {
+      transform: scale(1);
+      box-shadow: 1px 1px 4px rgba(0,0,0,0.3);
+    }
+
+    /* Main game container */
+    .container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 10px; /* Padding around the board */
+    }
+
+    /* Game board grid */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 4px; /* Slightly larger gap for better visual separation */
+      width: 95vmin; /* Use vmin for better responsiveness on smaller screens */
+      height: 95vmin;
+      max-width: 500px; /* Max width for desktop */
+      max-height: 500px; /* Max height for desktop */
+      position: relative;
+      background-color: #ccc; /* Background for the gaps */
+      border-radius: 15px; /* Rounded corners for the board */
+      padding: 4px; /* Padding to show the gap background around edges */
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2); /* Shadow for depth */
+    }
+
+    /* Individual cells */
+    .cell {
+      width: 100%;
+      aspect-ratio: 1; /* Keep cells square */
+      border: 1px solid #aaa; /* Lighter border */
+      text-align: center;
+      line-height: 100%;
+      font-size: clamp(18px, 5vw, 30px); /* Responsive font size */
+      font-weight: bold;
+      color: #333;
+      background-color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px; /* Rounded corners for cells */
+      transition: background-color 0.1s ease-in-out, transform 0.1s ease-in-out, border 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* Add border and box-shadow transition */
+      user-select: none; /* Prevent text selection */
+      -webkit-user-select: none; /* For Safari */
+      -moz-user-select: none; /* For Firefox */
+      -ms-user-select: none; /* For IE/Edge */
+      touch-action: none; /* Prevent default touch actions like scrolling */
+    }
+
+    /* Style for a cell selected by the Plus wildcard (now just a visual highlight for dragging) */
+    .cell.selected-for-plus {
+      border: 3px solid #FFC107; /* Highlight border */
+      box-shadow: 0 0 10px rgba(255,193,7,0.5); /* Subtle glow */
+      transform: scale(1.05); /* Slightly enlarge */
+    }
+
+    /* Dragover highlight styling */
+    .cell.dragover {
+        border: 4px solid #4CAF50 !important; /* Green border for dragover */
+        box-shadow: 0 0 15px rgba(76, 175, 80, 0.8); /* Green glow */
+    }
+
+    /* Cell colors based on number */
+    .num-1 { background-color: #EF9A9A; } /* Light Red */
+    .num-2 { background-color: #A5D6A7; } /* Light Green */
+    .num-3 { background-color: #90CAF9; } /* Light Blue */
+    .num-4 { background-color: #FFE082; } /* Light Amber */
+    .num-5 { background-color: #CE93D8; } /* Light Purple */
+    .num-6 { background-color: #FFAB91; } /* Light Orange */
+    .num-7 { background-color: #81D4FA; } /* Light Cyan */
+    .num-8 { background-color: #80CBC4; } /* Light Teal */
+    .num-9 { background-color: #C5E1A5; } /* Light Lime */
+    .num-10 { background-color: #FFCCBC; } /* Light Deep Orange */
+    .num-11 { background-color: #B39DDB; } /* Light Deep Purple */
+
+    /* Phosphorescent colors for 12-100 */
+    .phosphor-green {
+        background-color: #76FF03; /* Bright Green */
+        color: #333;
+        text-shadow: 0 0 5px #B2FF59, 0 0 10px #B2FF59;
+    }
+    .phosphor-red {
+        background-color: #FF1744; /* Bright Red */
+        color: #333;
+        text-shadow: 0 0 5px #FF8A80, 0 0 10px #FF8A80;
+    }
+    .phosphor-yellow {
+        background-color: #FFFF00; /* Bright Yellow */
+        color: #333;
+        text-shadow: 0 0 5px #FFFF8D, 0 0 10px #FFFF8D;
+    }
+
+    /* New phosphorescent colors for 101-300 */
+    .phosphor-blue {
+        background-color: #00BFFF; /* Deep Sky Blue */
+        color: #333;
+        text-shadow: 0 0 6px #87CEFA, 0 0 12px #87CEFA;
+    }
+    .phosphor-purple {
+        background-color: #8A2BE2; /* Blue Violet */
+        color: #333;
+        text-shadow: 0 0 6px #BA55D3, 0 0 12px #BA55D3;
+    }
+    .phosphor-orange {
+        background-color: #FF8C00; /* Dark Orange */
+        color: #333;
+        text-shadow: 0 0 6px #FFA07A, 0 0 12px #FFA07A;
+    }
+
+    /* New phosphorescent colors for >300 */
+    .super-phosphor-cyan {
+        background-color: #00FFFF; /* Cyan */
+        color: #333;
+        text-shadow: 0 0 8px #E0FFFF, 0 0 16px #E0FFFF;
+    }
+    .super-phosphor-magenta {
+        background-color: #FF00FF; /* Magenta */
+        color: #333;
+        text-shadow: 0 0 8px #FFB6C1, 0 0 16px #FFB6C1;
+    }
+    .super-phosphor-lime {
+        background-color: #32CD32; /* Lime Green */
+        color: #333;
+        text-shadow: 0 0 8px #ADFF2F, 0 0 16px #ADFF2F;
+    }
+
+    /* X2 cell styling */
+    .x2-cell {
+        background-color: #F44336; /* Red for X2 */
+        color: white;
+        font-weight: bolder;
+        font-size: clamp(22px, 6vw, 35px); /* Larger font for X2 */
+        border: 2px solid #D32F2F;
+        box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+    }
+
+    /* Divide cell styling */
+    .divide-cell {
+        background-color: #9C27B0; /* Purple for Divide */
+        color: white;
+        font-weight: bolder;
+        font-size: clamp(22px, 6vw, 35px); /* Larger font for Divide */
+        border: 2px solid #7B1FA2;
+        box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+    }
+
+    /* Plus cell styling (new) */
+    .plus-cell {
+        background-color: #FFEB3B; /* Yellow for Plus */
+        color: #333;
+        font-weight: bolder;
+        font-size: clamp(22px, 6vw, 35px); /* Larger font for Plus */
+        border: 2px solid #FBC02D;
+        box-shadow: inset 0 0 8px rgba(0,0,0,0.5);
+    }
+
+    /* Hint highlight styling */
+    .hint-highlight {
+        border: 4px solid #4CAF50 !important; /* Green border for hint */
+        box-shadow: 0 0 15px rgba(76, 175, 80, 0.8); /* Green glow */
+    }
+
+    /* Game Over message */
+    .game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(30px, 10vw, 60px); /* Responsive font size */
+      font-weight: bold;
+      color: #D32F2F; /* Dark Red */
+      text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+      z-index: 10;
+      display: none;
+      background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
+      padding: 20px 40px;
+      border-radius: 15px;
+      border: 3px solid #D32F2F;
+    }
+
+    /* Dragging clone styling */
+    .dragging {
+      position: absolute;
+      z-index: 9999;
+      pointer-events: none; /* Allow events to pass through to elements below */
+      width: calc(95vmin / 6 - 4px); /* Adjust based on board width and gap */
+      aspect-ratio: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: clamp(18px, 5vw, 30px);
+      font-weight: bold;
+      border: 1px solid black;
+      background-color: white;
+      transform: scale(1.1); /* Slightly larger when dragging */
+      opacity: 0.8; /* Slightly transparent */
+      border-radius: 8px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3); /* Shadow for the dragging element */
+    }
+
+    /* Custom Message Box */
+    .message-box {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #424242; /* Dark grey background */
+        color: white;
+        padding: 25px 40px;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        font-size: 1.3em;
+        font-weight: bold;
+        text-align: center;
+        z-index: 100; /* Above everything else */
+        display: none; /* Hidden by default */
+        border: 2px solid #616161; /* Slightly lighter border */
+    }
+
+    /* New bottom bar for hint button */
+    .bottom-bar {
+      display: flex;
+      flex-direction: row; /* Horizontal layout */
+      align-items: center;
+      justify-content: center; /* Center horizontally */
+      padding: 15px;
+      background-color: #e0e0e0; /* Match top bar */
+      border-top: 2px solid #ccc;
+      box-shadow: 0 -2px 5px rgba(0,0,0,0.1); /* Shadow at the top */
+      border-radius: 15px 15px 0 0; /* Rounded top corners */
+      margin-top: auto; /* Push to the bottom */
+      width: 100%; /* Full width */
+      gap: 15px; /* Space between items */
+    }
+
+    .bottom-bar > div {
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #333;
+      display: flex; /* For aligning icon and text in hint section */
+      align-items: center;
+      gap: 5px;
+    }
+
+
+    @media (max-width: 600px) {
+      .top-bar {
+        padding: 10px;
+        flex-direction: column; /* Revert to column for very small screens */
+        justify-content: center;
+      }
+      .top-bar > div {
+        font-size: 1em;
+        margin: 5px 0;
+      }
+      #restartBtn {
+        font-size: 1em;
+        padding: 8px 15px;
+      }
+      .board {
+        gap: 3px;
+        width: 98vmin;
+        height: 98vmin;
+        padding: 3px;
+      }
+      .cell {
+        font-size: clamp(16px, 4vw, 24px);
+        border-radius: 6px;
+      }
+      .dragging {
+        width: calc(98vmin / 6 - 3px);
+      }
+      .game-over {
+        font-size: clamp(25px, 8vw, 50px);
+        padding: 15px 30px;
+      }
+      .message-box {
+        font-size: 1em;
+        padding: 20px 30px;
+      }
+      #noMovesMessage {
+        font-size: 1em;
+        padding: 6px 10px;
+      }
+      .bottom-bar {
+        padding: 10px;
+        flex-wrap: wrap; /* Allow items to wrap on small screens */
+        justify-content: center;
+        gap: 10px;
+      }
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="top-bar">
+    <div>Nivel: <span id="levelIndicator">1</span></div>
+    <div>Movimientos: <span id="moveCount">0</span></div>
+    <div>Mayor: <span id="highestNumber">0</span></div>
+    <div id="comodines">
+      <button class="star-btn" aria-label="Usar comodín de barajar">⭐</button>
+      <button class="star-btn" aria-label="Usar comodín de barajar">⭐</button>
+      <button class="star-btn" aria-label="Usar comodín de barajar">⭐</button>
+    </div>
+    <div id="noMovesMessage"></div> <!-- New element for "No hay movimientos" message -->
+    <button id="restartBtn">Reiniciar Juego</button>
+  </div>
+
+  <div class="container">
+    <div class="board"></div>
+    <div class="game-over">Game Over</div>
+  </div>
+
+  <!-- New bottom bar for hint button -->
+  <div class="bottom-bar">
+    <div id="ayuda">
+        <button class="hint-btn" aria-label="Usar pista">💡</button>
+        <span>Pistas: <span id="hintCount">3</span></span>
+    </div>
+  </div>
+
+  <div id="messageBox" class="message-box"></div>
+
+  <script>
+    // Get references to DOM elements
+    const board = document.querySelector('.board');
+    const levelIndicatorEl = document.getElementById('levelIndicator');
+    const moveCountEl = document.getElementById('moveCount');
+    const restartBtn = document.getElementById('restartBtn');
+    const gameOverEl = document.querySelector('.game-over');
+    const highestNumberEl = document.getElementById('highestNumber');
+    const starButtons = document.querySelectorAll('.star-btn');
+    const messageBox = document.getElementById('messageBox');
+    const hintButton = document.querySelector('.hint-btn'); // Reference to hint button
+    const hintCountEl = document.getElementById('hintCount'); // Reference to hint count display
+    const noMovesMessageEl = document.getElementById('noMovesMessage'); // Reference to the new message element
+
+    // Game state variables
+    let draggedCell = null; // The original cell being dragged
+    let clone = null;        // The visual clone of the dragged cell
+    let offsetX = 0;         // X offset from touch to cell's top-left
+    let offsetY = 0;         // Y offset from touch to cell's top-left
+    let moves = 0;
+    let level = 1;
+    let highestNumber = 0; // Overall highest number achieved in the game
+    let dragTouchId = null; // Identifier for the touch that started the drag
+    let currentLevelProgressSum = 0; // Cumulative sum of merges > 60 for current level
+    let hintCount = 3; // Initial hint count
+    let plusGeneratedCountThisLevel = 0; // Tracks '+' generated in current level
+
+    // Define thresholds for level completion (cumulative sum of merges > 60) for 30 levels
+    // The first threshold is 60. Each subsequent threshold is double the previous one.
+    const levelCompletionThresholds = [];
+    let currentThreshold = 60;
+    for (let i = 0; i < 30; i++) { // Generate 30 thresholds
+        levelCompletionThresholds.push(currentThreshold);
+        currentThreshold *= 2;
+    }
+
+    /**
+     * Helper function to get the top two largest unique numbers currently on the board.
+     * @returns {{top1: number, top2: number}} An object containing the first and second largest numbers.
+     */
+    function getTopTwoNumbersOnBoard() {
+        const cells = Array.from(document.querySelectorAll('.cell'));
+        const numbers = [];
+        cells.forEach(cell => {
+            const val = parseInt(cell.textContent);
+            if (!isNaN(val)) {
+                numbers.push(val);
+            }
+        });
+
+        // Sort in descending order and remove duplicates
+        const uniqueSortedNumbers = [...new Set(numbers)].sort((a, b) => b - a);
+
+        const top1 = uniqueSortedNumbers[0] || 0; // Default to 0 if no numbers
+        const top2 = uniqueSortedNumbers[1] || 0; // Default to 0 if only one or no numbers
+
+        return { top1, top2 };
+    }
+
+    /**
+     * Generates a random number or '?' or 'X2' or '÷' or '+' based on the current level rules.
+     * The range of base numbers changes with each level.
+     * Probabilities for special cells ('X2', '÷', '+') increase with higher levels.
+     * @returns {number|string} The random value.
+     */
+    function getRandomNumber() {
+        let baseNumbers = [];
+        let wildcardChance = 0.1; // 10% chance for '?'
+        let x2Chance = 0;
+        let divideChance = 0;
+        let plusChance = 0.03; // 3% fixed chance for '+'
+
+        // Define base number range based on level
+        // This logic already progressively increases the minimum number generated
+        // as the level goes up, effectively "disappearing" lower numbers.
+        if (level <= 1) {
+            baseNumbers = [1, 2, 3, 4, 5, 6, 7, 8];
+        } else if (level === 2) {
+            baseNumbers = [2, 3, 4, 5, 6, 7, 8];
+        } else if (level === 3) {
+            baseNumbers = [3, 4, 5, 6, 7, 8];
+            x2Chance = 0.05;
+        } else if (level === 4) {
+            baseNumbers = [4, 5, 6, 7, 8];
+            x2Chance = 0.08;
+            divideChance = 0.02; /* Reduced ÷ chance */
+        } else if (level === 5) {
+            baseNumbers = [5, 6, 7, 8];
+            x2Chance = 0.10;
+            divideChance = 0.03; /* Reduced ÷ chance */
+        } else if (level === 6) {
+            baseNumbers = [6, 7, 8];
+            x2Chance = 0.12;
+            divideChance = 0.04; /* Reduced ÷ chance */
+        } else if (level === 7) {
+            baseNumbers = [7, 8];
+            x2Chance = 0.15;
+            divideChance = 0.05; /* Reduced ÷ chance */
+        } else if (level === 8) {
+            baseNumbers = [8];
+            x2Chance = 0.18;
+            divideChance = 0.06; /* Reduced ÷ chance */
+        } else if (level === 9) {
+            baseNumbers = [8, 9];
+            x2Chance = 0.20;
+            divideChance = 0.07; /* Reduced ÷ chance */
+        } else if (level === 10) {
+            baseNumbers = [9, 10];
+            x2Chance = 0.22;
+            divideChance = 0.08; /* Reduced ÷ chance */
+        } else if (level <= 15) { // Levels 11-15
+            const minNum = 9 + (level - 10); // 11 -> 10, 12 -> 11, ..., 15 -> 14
+            baseNumbers = [minNum, minNum + 1, minNum + 2]; // A range of 3 numbers
+            x2Chance = 0.22 + (level - 10) * 0.01; // Increase X2 chance
+            divideChance = 0.08 + (level - 10) * 0.003; /* Adjusted ÷ increase */
+        } else if (level <= 20) { // Levels 16-20
+            const minNum = 14 + (level - 15); // 16 -> 15, ..., 20 -> 19
+            baseNumbers = [minNum, minNum + 1, minNum + 2];
+            x2Chance = 0.27 + (level - 15) * 0.01;
+            divideChance = 0.095 + (level - 15) * 0.003; /* Adjusted ÷ increase */
+        } else if (level <= 25) { // Levels 21-25
+            const minNum = 19 + (level - 20); // 21 -> 20, ..., 25 -> 24
+            baseNumbers = [minNum, minNum + 1, minNum + 2];
+            x2Chance = 0.32 + (level - 20) * 0.005;
+            divideChance = 0.11 + (level - 20) * 0.002; /* Adjusted ÷ increase */
+        } else { // Levels 26-30+
+            const minNum = 24 + (level - 25); // 26 -> 25, ..., 30 -> 29 (or max out at a reasonable number)
+            baseNumbers = [minNum, minNum + 1, minNum + 2];
+            x2Chance = Math.min(0.35, 0.345 + (level - 25) * 0.001);
+            divideChance = Math.min(0.12, 0.12 + (level - 25) * 0.001); /* Capped ÷ chance */
+        }
+        
+        // Ensure baseNumbers are never empty or invalid
+        if (baseNumbers.length === 0) {
+            baseNumbers = [1]; // Fallback to 1 if no numbers are defined for some reason
+        }
+
+
+        const rand = Math.random();
+
+        // Check for special cell generation based on probabilities
+        if (rand < x2Chance) {
+            return 'X2';
+        } else if (rand < x2Chance + divideChance) {
+            return '÷';
+        } else if (rand < x2Chance + divideChance + plusChance && plusGeneratedCountThisLevel < 3) {
+            plusGeneratedCountThisLevel++; // Increment count when '+' is generated
+            return '+';
+        } else if (rand < x2Chance + divideChance + plusChance + wildcardChance) {
+            return '?';
+        } else {
+            // Pick a random number from the allowed base numbers for the current level
+            return baseNumbers[Math.floor(Math.random() * baseNumbers.length)];
+        }
+    }
+
+    /**
+     * Checks if a given number is "forbidden" for the current level.
+     * Used when updating the board after a level up.
+     * This logic also progressively increases the minimum allowed number
+     * as the level goes up, ensuring lower numbers are replaced.
+     * @param {number} num - The number to check.
+     * @returns {boolean} True if the number should not appear in the current level.
+     */
+    function isNumberForbiddenForCurrentLevel(num) {
+        if (typeof num !== 'number') return false; // Only check actual numbers
+
+        let minAllowedNumForLevel;
+
+        if (level <= 1) {
+            minAllowedNumForLevel = 1;
+        } else if (level === 2) {
+            minAllowedNumForLevel = 2;
+        } else if (level === 3) {
+            minAllowedNumForLevel = 3;
+        } else if (level === 4) {
+            minAllowedNumForLevel = 4;
+        } else if (level === 5) {
+            minAllowedNumForLevel = 5;
+        } else if (level === 6) {
+            minAllowedNumForLevel = 6;
+        } else if (level === 7) {
+            minAllowedNumForLevel = 7;
+        } else if (level === 8) {
+            minAllowedNumForLevel = 8;
+        } else if (level === 9) {
+            minAllowedNumForLevel = 8; // 8 is allowed, 1-7 forbidden
+        } else if (level === 10) {
+            minAllowedNumForLevel = 9; // 9 is allowed, 1-8 forbidden
+        } else if (level <= 15) { // Levels 11-15
+            minAllowedNumForLevel = 9 + (level - 10); // 11 -> 10, 12 -> 11, ..., 15 -> 14
+        } else if (level <= 20) { // Levels 16-20
+            minAllowedNumForLevel = 14 + (level - 15); // 16 -> 15, ..., 20 -> 19
+        } else if (level <= 25) { // Levels 21-25
+            minAllowedNumForLevel = 19 + (level - 20); // 21 -> 20, ..., 25 -> 24
+        } else { // Levels 26-30+
+            minAllowedNumForLevel = 24 + (level - 25); // 26 -> 25, ..., 30 -> 29
+        }
+
+        return num < minAllowedNumForLevel;
+    }
+
+    /**
+     * Checks if two cells are adjacent (horizontally, vertically, or diagonally).
+     * @param {HTMLElement} cell1 - The first cell element.
+     * @param {HTMLElement} cell2 - The second cell element.
+     * @returns {boolean} True if cells are adjacent, false otherwise.
+     */
+    function isAdjacent(cell1, cell2) {
+      const cells = Array.from(document.querySelectorAll('.cell'));
+      const index1 = cells.indexOf(cell1);
+      const index2 = cells.indexOf(cell2);
+
+      // If either cell is not found, they can't be adjacent
+      if (index1 === -1 || index2 === -1) return false;
+
+      const BOARD_COLS = 6; // Assuming a 6x6 board
+
+      const row1 = Math.floor(index1 / BOARD_COLS);
+      const col1 = index1 % BOARD_COLS;
+      const row2 = Math.floor(index2 / BOARD_COLS);
+      const col2 = index2 % BOARD_COLS;
+
+      // Check for adjacency: difference in rows and columns must be at most 1
+      const rowDiff = Math.abs(row1 - row2);
+      const colDiff = Math.abs(col1 - col2);
+
+      return (rowDiff <= 1 && colDiff <= 1) && !(rowDiff === 0 && colDiff === 0); // Not the same cell
+    }
+
+    /**
+     * Determines if a merge is possible between two cells based on their content for adjacent moves.
+     * @param {HTMLElement} cellA - The first cell.
+     * @param {HTMLElement} cellB - The second cell.
+     * @returns {boolean} True if a merge can occur, false otherwise.
+     */
+    function canCellsMerge(cellA, cellB) {
+        const valA = cellA.textContent;
+        const valB = cellB.textContent;
+
+        const { top1, top2 } = getTopTwoNumbersOnBoard();
+        const numA = parseInt(valA);
+        const numB = parseInt(valB);
+
+        // Rule: Wildcards cannot be used on the two largest numbers.
+        // Check if cellA is a wildcard and cellB is one of the top two numbers
+        if ((valA === '?' || valA === 'X2' || valA === '÷') && (numB === top1 || numB === top2)) {
+            showMessage(`No puedes usar el comodín ${valA} en los dos números más grandes del tablero.`);
+            return false;
+        }
+        // Check if cellB is a wildcard and cellA is one of the top two numbers
+        if ((valB === '?' || valB === 'X2' || valB === '÷') && (numA === top1 || numA === top2)) {
+            showMessage(`No puedes usar el comodín ${valB} en los dos números más grandes del tablero.`);
+            return false;
+        }
+
+        // '+' cells are not mergeable in normal adjacent moves, they are power-ups.
+        if (valA === '+' || valB === '+') return false;
+
+        // Same numbers (not '?' or 'X2' or '÷')
+        if (valA === valB && valA !== '?' && valA !== 'X2' && valA !== '÷') return true;
+        // Wildcard with any other value
+        if (valA === '?' || valB === '?') return true;
+        // X2 with a number (but not X2 with X2 or X2 with ÷)
+        if ((valA === 'X2' && valB !== 'X2' && valB !== '?' && valB !== '÷') ||
+            (valB === 'X2' && valA !== 'X2' && valA !== '?' && valA !== '÷')) return true;
+        // X2 with X2
+        if (valA === 'X2' && valB === 'X2') return true;
+        // Divide with a number (but not Divide with X2 or Divide with Divide)
+        if ((valA === '÷' && valB !== 'X2' && valB !== '?' && valB !== '÷') ||
+            (valB === '÷' && valA !== 'X2' && valA !== '?' && valA !== '÷')) return true;
+        // Divide with Divide
+        if (valA === '÷' && valB === '÷') return true;
+
+        return false;
+    }
+
+    /**
+     * Checks if the game is over or if there are no possible moves.
+     * @returns {boolean} True if game is over, false otherwise.
+     */
+    function checkGameOver() {
+      const cells = Array.from(document.querySelectorAll('.cell'));
+      let anyMovesPossible = false;
+
+      // Iterate through all pairs of cells to find a possible merge
+      for (let i = 0; i < cells.length; i++) {
+        for (let j = 0; j < cells.length; j++) { // Check all cells, not just pairs after i
+          if (i === j) continue; // Skip comparing a cell to itself
+
+          const cellA = cells[i];
+          const cellB = cells[j];
+
+          // Check for normal adjacent merges
+          if (isAdjacent(cellA, cellB) && canCellsMerge(cellA, cellB)) {
+            anyMovesPossible = true;
+            break;
+          }
+          // Check for potential '+' wildcard moves
+          if (cellA.textContent === '+' && canPlusWildcardMerge(cellA, cellB)) {
+              anyMovesPossible = true;
+              break;
+          }
+        }
+        if (anyMovesPossible) break;
+      }
+
+      const remainingStars = Array.from(starButtons).some(btn => !btn.disabled);
+      const remainingPlusCellsOnBoard = cells.some(cell => cell.textContent === '+');
+
+      if (anyMovesPossible) {
+          // If moves are possible, hide the "No hay movimientos" message
+          noMovesMessageEl.style.display = 'none';
+          return false; // Game is NOT over
+      } else {
+          // No moves are possible
+          if (remainingStars || remainingPlusCellsOnBoard) {
+              // No moves, but power-ups available. Show "No hay movimientos posibles" message.
+              noMovesMessageEl.textContent = '¡No hay movimientos posibles! Usa tus comodines.';
+              noMovesMessageEl.style.display = 'block';
+              setTimeout(() => {
+                  noMovesMessageEl.style.display = 'none';
+              }, 3000); // Hide after 3 seconds
+              return false; // Game is NOT over yet
+          } else {
+              // No moves AND no power-ups. Game is truly over.
+              gameOverEl.style.display = 'block'; // Show game over message
+              setTimeout(initGame, 6000); // Restart after 6 seconds
+              return true; // Game IS over
+          }
+      }
+    }
+
+    /**
+     * Sets the appropriate background color class for a cell based on its number or type.
+     * Also applies phosphorescent colors for numbers 12 and above.
+     * @param {HTMLElement} cell - The cell element to color.
+     */
+    function setColor(cell) {
+      // Remove all existing number and special classes
+      cell.className = 'cell'; // Reset all classes to just 'cell'
+      cell.style.fontSize = ''; // Reset dynamic font size
+
+      const cellValue = cell.textContent;
+
+      if (cellValue === 'X2') {
+        cell.classList.add('x2-cell');
+      } else if (cellValue === '÷') {
+        cell.classList.add('divide-cell');
+      } else if (cellValue === '+') { // New: styling for '+' cell
+        cell.classList.add('plus-cell');
+      } else if (cellValue === '?') {
+        // Default styling for '?' (white background)
+      } else {
+        const val = parseInt(cellValue);
+        if (!isNaN(val)) {
+          if (val > 300) { // New range: > 300
+            const colors = ['super-phosphor-cyan', 'super-phosphor-magenta', 'super-phosphor-lime'];
+            const colorIndex = val % colors.length;
+            cell.classList.add(colors[colorIndex]);
+          } else if (val > 100) { // New range: 101-300
+            const colors = ['phosphor-blue', 'phosphor-purple', 'phosphor-orange'];
+            const colorIndex = val % colors.length;
+            cell.classList.add(colors[colorIndex]);
+          } else if (val >= 12) { // Original range: 12-100
+            const colors = ['phosphor-green', 'phosphor-red', 'phosphor-yellow'];
+            const colorIndex = val % colors.length;
+            cell.classList.add(colors[colorIndex]);
+          } else {
+            // Apply standard number colors (for 1-11)
+            cell.classList.add('num-' + val);
+          }
+
+          // Dynamic font size adjustment for large numbers
+          const textLength = cellValue.length;
+          if (textLength >= 6) { // For numbers with 6 or more digits
+            cell.style.fontSize = 'clamp(12px, 2.5vw, 18px)';
+          } else if (textLength >= 4) { // For numbers with 4 or 5 digits
+            cell.style.fontSize = 'clamp(14px, 3.5vw, 24px)';
+          } else {
+            cell.style.fontSize = ''; // Reset to default clamp in CSS for shorter numbers
+          }
+        }
+      }
+    }
+
+    /**
+     * Updates the highest number achieved in the game.
+     * @param {string|number} num - The number to check against the current highest.
+     */
+    function updateHighest(num) {
+      // Only update if it's a number and greater than current highest
+      if (num !== '?' && num !== 'X2' && num !== '÷' && num !== '+' && Number(num) > highestNumber) {
+        highestNumber = Number(num);
+        highestNumberEl.textContent = highestNumber;
+      }
+    }
+
+    /**
+     * Handles the logic for moving/merging a cell. This is for normal adjacent moves.
+     * @param {HTMLElement} startCell - The cell from which the drag started.
+     * @param {HTMLElement} endCell - The cell where the drag ended.
+     */
+    function moveCell(startCell, endCell) {
+      const startVal = startCell.textContent;
+      const endVal = endCell.textContent;
+
+      // Check if a merge is possible between the two cells
+      if (isAdjacent(startCell, endCell) && canCellsMerge(startCell, endCell)) {
+        let newValue;
+        let mergedValueForProgress = 0; // Value to add to currentLevelProgressSum
+
+        if (startVal === 'X2' && endVal === 'X2') {
+            newValue = 16; // X2 merges with X2 -> results in 16
+            mergedValueForProgress = 16;
+        } else if (startVal === 'X2' && endVal !== '?') {
+            newValue = (Number(endVal) * 2);
+            mergedValueForProgress = newValue;
+        } else if (endVal === 'X2' && startVal !== '?') {
+            newValue = (Number(startVal) * 2);
+            mergedValueForProgress = newValue;
+        } else if (startVal === '÷' && endVal !== '?') {
+            newValue = Math.floor(Number(endVal) / 2); // Divide by 2
+            mergedValueForProgress = newValue;
+        } else if (endVal === '÷' && startVal !== '?') {
+            newValue = Math.floor(Number(startVal) / 2); // Divide by 2
+            mergedValueForProgress = newValue;
+        } else if (startVal === '÷' && endVal === '÷') {
+            newValue = 4; // Two divides merge to 4
+            mergedValueForProgress = 4;
+        } else if (startVal === '?') {
+            newValue = endVal;
+            mergedValueForProgress = Number(endVal);
+        } else if (endVal === '?') {
+            newValue = startVal;
+            mergedValueForProgress = Number(startVal);
+        } else { // Regular number merge (startVal === endVal)
+            newValue = (Number(endVal) * 2);
+            mergedValueForProgress = newValue;
+        }
+
+        endCell.textContent = newValue; // Update destination cell's value
+        setColor(endCell);               // Update destination cell's color
+        updateHighest(newValue);         // Update highest number achieved
+
+        // Replace the source cell with a new random number based on current level rules
+        startCell.textContent = getRandomNumber();
+        setColor(startCell);                     // Update source cell's color
+
+        moves++; // Increment move count (for display)
+        moveCountEl.textContent = moves;
+
+        // Level progression logic based on cumulative sum of merges > 60
+        if (typeof mergedValueForProgress === 'number' && mergedValueForProgress > 60) {
+            currentLevelProgressSum += mergedValueForProgress;
+            // Check if current level is not the last level and threshold is met
+            if (level < levelCompletionThresholds.length && currentLevelProgressSum >= levelCompletionThresholds[level - 1]) {
+                level++; // Advance to next level
+                levelIndicatorEl.textContent = level; // Update level display
+                currentLevelProgressSum = 0; // Reset sum for new level
+                plusGeneratedCountThisLevel = 0; // Reset '+' generated count for new level
+                showMessage(`¡Nivel ${level - 1} completado! Pasando al Nivel ${level}.`);
+                starButtons.forEach(btn => btn.disabled = false); // Reset star comodines
+                hintCount = 3; // Reset hint count on level up
+                hintCountEl.textContent = hintCount;
+                hintButton.disabled = false; // Enable hint button
+                updateBoardForNewLevel(); // Update existing cells for new level rules
+                return; // Exit to prevent immediate game over check on old board
+            } else if (level === levelCompletionThresholds.length && currentLevelProgressSum >= levelCompletionThresholds[level - 1]) {
+                showMessage('¡Felicidades! Has completado todos los niveles.');
+            }
+        }
+
+        checkGameOver(); // After every move, check if the game is over
+      }
+    }
+
+    /**
+     * Determines if a '+' wildcard merge is possible.
+     * A '+' can merge with:
+     * - Any numerical cell (to double it).
+     * - A '?' cell.
+     * - NOT an 'X2' or '÷' cell.
+     * @param {HTMLElement} plusCell - The cell containing '+'.
+     * @param {HTMLElement} targetCell - The cell where the '+' is dropped.
+     * @returns {boolean} True if a merge can occur, false otherwise.
+     */
+    function canPlusWildcardMerge(plusCell, targetCell) {
+        if (plusCell.textContent !== '+') return false; // Ensure source is a '+'
+        if (targetCell === plusCell) return false; // Cannot drop on itself
+
+        const targetVal = targetCell.textContent;
+        const targetNum = parseInt(targetVal);
+
+        const { top1, top2 } = getTopTwoNumbersOnBoard();
+
+        // Cannot merge with 'X2' or '÷'
+        if (targetVal === 'X2' || targetVal === '÷') {
+            return false;
+        }
+
+        // Can merge with '?'
+        if (targetVal === '?') return true;
+        
+        // Can merge with any number, but not the two largest numbers
+        if (!isNaN(targetNum)) {
+            if (targetNum === top1 || targetNum === top2) {
+                showMessage("No puedes usar el comodín Más en los dos números más grandes del tablero.");
+                return false;
+            }
+            return true;
+        }
+        return false;
+    }
+
+
+    /**
+     * Handles the move logic when a '+' wildcard cell is used.
+     * Allows non-adjacent moves for summing identical numbers or '?' interactions.
+     * @param {HTMLElement} sourceCell The cell containing '+'.
+     * @param {HTMLElement} targetCell The cell where the '+' is dropped.
+     * @returns {boolean} True if a move was successfully performed, false otherwise.
+     */
+    function performPlusWildcardMove(sourceCell, targetCell) {
+      if (sourceCell.textContent !== '+') {
+        showMessage("Esta no es una celda de comodín Más.");
+        return false;
+      }
+      if (targetCell === sourceCell) {
+        return false; // Cannot drop on itself
+      }
+
+      const targetVal = targetCell.textContent;
+      let newValue = null;
+      let mergedValueForProgress = 0;
+      let performed = false;
+
+      const { top1, top2 } = getTopTwoNumbersOnBoard();
+      const targetNum = parseInt(targetVal);
+
+      // Logic for '+' interacting with other cells
+      if (targetVal === '?') {
+        newValue = getRandomNumber(); // '?' + '+' = new random number
+        targetCell.textContent = newValue.toString();
+        setColor(targetCell);
+        updateHighest(newValue);
+        performed = true;
+      } else if (targetVal === 'X2' || targetVal === '÷') {
+        showMessage(`No puedes usar el comodín Más con celdas de ${targetVal}.`);
+        return false;
+      } else {
+        if (!isNaN(targetNum)) {
+            if (targetNum === top1 || targetNum === top2) {
+                showMessage("No puedes usar el comodín Más en los dos números más grandes del tablero.");
+                return false;
+            }
+            newValue = (targetNum * 2); // Double the number directly
+            mergedValueForProgress = newValue;
+            targetCell.textContent = newValue.toString(); // Update target cell
+            setColor(targetCell);
+            updateHighest(newValue);
+            performed = true;
+        } else {
+          showMessage("No puedes usar el comodín Más en celdas especiales o vacías.");
+          return false;
+        }
+      }
+
+      if (performed) {
+        sourceCell.textContent = getRandomNumber(); // The '+' cell is replaced
+        setColor(sourceCell);
+        moves++;
+        moveCountEl.textContent = moves;
+
+        // Level progression logic (same as in moveCell)
+        if (typeof mergedValueForProgress === 'number' && mergedValueForProgress > 60) {
+            currentLevelProgressSum += mergedValueForProgress;
+            // Check if current level is not the last level and threshold is met
+            if (level < levelCompletionThresholds.length && currentLevelProgressSum >= levelCompletionThresholds[level - 1]) {
+                level++;
+                levelIndicatorEl.textContent = level;
+                currentLevelProgressSum = 0;
+                plusGeneratedCountThisLevel = 0; // Reset '+' generated count for new level
+                showMessage(`¡Nivel ${level - 1} completado! Pasando al Nivel ${level}.`);
+                starButtons.forEach(btn => btn.disabled = false);
+                hintCount = 3; // Reset hint count on level up
+                hintCountEl.textContent = hintCount;
+                hintButton.disabled = false; // Enable hint button
+                updateBoardForNewLevel();
+                return;
+            } else if (level === levelCompletionThresholds.length && currentLevelProgressSum >= levelCompletionThresholds[level - 1]) {
+                showMessage('¡Felicidades! Has completado todos los niveles.');
+            }
+        }
+      }
+      checkGameOver();
+      return performed;
+    }
+
+
+    /**
+     * Updates the existing cells on the board when a new level is reached.
+     * Replaces numbers that are no longer allowed in the new level.
+     */
+    function updateBoardForNewLevel() {
+        const cells = Array.from(document.querySelectorAll('.cell'));
+        cells.forEach(cell => {
+            const cellValue = parseInt(cell.textContent);
+            // If the cell contains a number that is now forbidden for the current level,
+            // replace it with a new random number valid for this level.
+            if (!isNaN(cellValue) && isNumberForbiddenForCurrentLevel(cellValue)) {
+                cell.textContent = getRandomNumber();
+                setColor(cell);
+                updateHighest(cell.textContent);
+            }
+        });
+    }
+
+    /**
+     * Displays a temporary message box.
+     * @param {string} message - The message to display.
+     */
+    function showMessage(message) {
+      messageBox.textContent = message;
+      messageBox.style.display = 'block';
+      setTimeout(() => {
+        messageBox.style.display = 'none';
+      }, 3000); // Hide after 3 seconds
+    }
+
+    /**
+     * Finds and highlights a valid move on the board.
+     * Only highlights the first valid pair found.
+     */
+    function findAndHighlightHint() {
+        const cells = Array.from(document.querySelectorAll('.cell'));
+        let hintFound = false;
+
+        for (let i = 0; i < cells.length; i++) {
+            for (let j = 0; j < cells.length; j++) {
+                if (i === j) continue; // Skip comparing a cell to itself
+
+                const cellA = cells[i];
+                const cellB = cells[j];
+
+                // Check for normal adjacent merges
+                if (isAdjacent(cellA, cellB) && canCellsMerge(cellA, cellB)) {
+                    cellA.classList.add('hint-highlight');
+                    cellB.classList.add('hint-highlight');
+                    hintFound = true;
+                    setTimeout(() => {
+                        cellA.classList.remove('hint-highlight');
+                        cellB.classList.remove('hint-highlight');
+                    }, 1500); // Highlight for 1.5 seconds
+                    return; // Only highlight the first one found
+                }
+                // Check for '+' wildcard hints
+                if (cellA.textContent === '+' && canPlusWildcardMerge(cellA, cellB)) {
+                    cellA.classList.add('hint-highlight');
+                    cellB.classList.add('hint-highlight');
+                    hintFound = true;
+                    setTimeout(() => {
+                        cellA.classList.remove('hint-highlight');
+                        cellB.classList.remove('hint-highlight');
+                    }, 1500);
+                    return;
+                }
+            }
+        }
+
+        if (!hintFound) {
+            showMessage('No hay movimientos posibles en este momento.');
+        }
+    }
+
+    /**
+     * Creates a new cell element and attaches touch event listeners.
+     */
+    function createCell() {
+      const cell = document.createElement('div');
+      cell.classList.add('cell');
+      cell.textContent = getRandomNumber(); // Assign initial random number based on current level
+      setColor(cell);                      // Set initial color
+      updateHighest(cell.textContent);     // Update highest number
+
+      board.appendChild(cell); // Add cell to the board
+
+      // --- Touch Event Listeners ---
+
+      // Touch Start: Initiates drag
+      cell.addEventListener('touchstart', (e) => {
+        // Only start a drag if no other drag is active or if it's the first touch
+        if (draggedCell || e.touches.length > 1) return;
+
+        e.preventDefault(); // Prevent scrolling/zooming on touch start
+
+        draggedCell = cell; // Store the original cell
+        dragTouchId = e.touches[0].identifier; // Store the ID of the touch that started the drag
+
+        // Add highlight to the original cell if it's a '+' wildcard
+        if (draggedCell.textContent === '+') {
+            draggedCell.classList.add('selected-for-plus');
+        }
+
+        // Create a clone for visual dragging feedback
+        clone = cell.cloneNode(true);
+        const rect = cell.getBoundingClientRect();
+        const boardRect = board.getBoundingClientRect();
+
+        // Position the clone relative to the board container
+        clone.style.top = (rect.top - boardRect.top) + "px";
+        clone.style.left = (rect.left - boardRect.left) + "px";
+        clone.classList.add('dragging'); // Apply dragging styles
+        board.appendChild(clone); // Add clone to the board container
+
+        // Calculate offset from touch point to cell's top-left corner
+        offsetX = e.touches[0].clientX - rect.left;
+        offsetY = e.touches[0].clientY - rect.top;
+      }, { passive: false }); // Use passive: false to allow preventDefault
+
+      // Touch Move: Updates clone position
+      cell.addEventListener('touchmove', (e) => {
+        // Only process if a drag is active and it's the correct touch
+        if (!clone || draggedCell !== cell) return;
+
+        // Find the touch that matches the dragTouchId
+        let currentTouch = null;
+        for (let i = 0; i < e.touches.length; i++) {
+          if (e.touches[i].identifier === dragTouchId) {
+            currentTouch = e.touches[i];
+            break;
+          }
+        }
+
+        if (currentTouch) {
+          e.preventDefault(); // Prevent scrolling while dragging
+          const boardRect = board.getBoundingClientRect();
+          // Update clone's position relative to the board
+          clone.style.left = (currentTouch.clientX - boardRect.left - offsetX) + "px";
+          clone.style.top = (currentTouch.clientY - boardRect.top - offsetY) + "px";
+
+          // Add/remove dragover class for visual feedback
+          const targetCell = document.elementFromPoint(currentTouch.clientX, currentTouch.clientY);
+          document.querySelectorAll('.cell').forEach(c => c.classList.remove('dragover')); // Clear all first
+
+          if (targetCell && targetCell.classList.contains('cell') && targetCell !== draggedCell) {
+            if (draggedCell.textContent === '+') {
+                // For '+' wildcard, highlight if it's a valid target for its special merge
+                if (canPlusWildcardMerge(draggedCell, targetCell)) {
+                    targetCell.classList.add('dragover');
+                }
+            } else if (isAdjacent(draggedCell, targetCell) && canCellsMerge(draggedCell, targetCell)) {
+              targetCell.classList.add('dragover'); // Only adjacent and mergeable in normal mode
+            }
+          }
+        }
+      }, { passive: false }); // Use passive: false to allow preventDefault
+
+      // Touch End: Ends drag and processes move
+      cell.addEventListener('touchend', (e) => {
+        // Only process if this cell is the one that was dragged
+        if (draggedCell !== cell) return;
+
+        // Ensure the touch that started the drag has ended
+        let endedTouch = null;
+        for (let i = 0; i < e.changedTouches.length; i++) {
+          if (e.changedTouches[i].identifier === dragTouchId) {
+            endedTouch = e.changedTouches[i];
+            break;
+          }
+        }
+
+        if (endedTouch) {
+          // Get the element under the touch point where the touch ended
+          const targetCell = document.elementFromPoint(endedTouch.clientX, endedTouch.clientY);
+
+          // Clear any dragover highlights
+          document.querySelectorAll('.cell').forEach(c => c.classList.remove('dragover'));
+
+          // If the target is a cell and it's not the dragged cell itself
+          if (targetCell && targetCell.classList.contains('cell') && targetCell !== draggedCell) {
+            if (draggedCell.textContent === '+') {
+              performPlusWildcardMove(draggedCell, targetCell);
+            } else {
+              // Normal adjacent move
+              moveCell(draggedCell, targetCell);
+            }
+          }
+        }
+
+        // Clean up after drag ends, regardless of whether a merge happened
+        if (clone && board.contains(clone)) {
+            board.removeChild(clone);
+        }
+        if (draggedCell) {
+            draggedCell.classList.remove('selected-for-plus'); // Remove highlight from original cell
+        }
+        clone = null;
+        draggedCell = null;
+        dragTouchId = null; // Reset touch ID
+      });
+    }
+
+    /**
+     * Shuffles the numbers on the board. Used by star power-ups.
+     */
+    function shuffleBoard() {
+      const cells = Array.from(document.querySelectorAll('.cell'));
+      // Extract current values from cells
+      const values = cells.map(cell => cell.textContent);
+      // Randomly sort the values
+      values.sort(() => Math.random() - 0.5);
+      // Assign shuffled values back to cells
+      cells.forEach((cell, i) => {
+        cell.textContent = values[i];
+        setColor(cell);            // Update color
+        updateHighest(values[i]); // Update highest number
+      });
+      showMessage('¡Tablero barajado!'); // Inform user
+      checkGameOver(); // Check game over after shuffle
+    }
+
+    // Attach event listeners to star buttons
+    starButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        if (!button.disabled) {
+          shuffleBoard();      // Shuffle the board
+          button.disabled = true; // Disable the used star button
+        }
+      });
+    });
+
+    // Attach event listener to the hint button
+    hintButton.addEventListener('click', () => {
+        if (hintCount > 0) {
+            hintCount--;
+            hintCountEl.textContent = hintCount;
+            findAndHighlightHint();
+            if (hintCount === 0) {
+                hintButton.disabled = true;
+            }
+        } else {
+            showMessage('No te quedan pistas.');
+        }
+    });
+
+    /**
+     * Initializes or restarts the game.
+     * This function is called on full game restart.
+     */
+    function initGame() {
+      board.innerHTML = ''; // Clear existing cells
+      // Reset game state variables for a fresh start
+      moves = 0;
+      level = 1; // Always reset to level 1 on full restart
+      highestNumber = 0;
+      currentLevelProgressSum = 0; // Reset cumulative sum
+      hintCount = 3; // Reset hint count
+      plusGeneratedCountThisLevel = 0; // Reset '+' generated count
+      
+      moveCountEl.textContent = 0;
+      highestNumberEl.textContent = 0;
+      levelIndicatorEl.textContent = level; // Update level display
+      hintCountEl.textContent = hintCount; // Update hint count display
+      gameOverEl.style.display = 'none'; // Hide game over message
+      noMovesMessageEl.style.display = 'none'; // Hide "No hay movimientos" message
+      starButtons.forEach(btn => btn.disabled = false); // Re-enable star buttons
+      hintButton.disabled = false; // Enable hint button
+      
+      // Clear any lingering drag state
+      if (clone && board.contains(clone)) {
+        board.removeChild(clone);
+      }
+      if (draggedCell) {
+        draggedCell.classList.remove('selected-for-plus');
+      }
+      document.querySelectorAll('.cell').forEach(c => c.classList.remove('dragover'));
+      clone = null;
+      draggedCell = null;
+      dragTouchId = null;
+
+      // Create 36 new cells for a 6x6 board
+      for (let i = 0; i < 36; i++) {
+        createCell(); // createCell uses getRandomNumber which is level-aware
+      }
+      showMessage(`¡Juego Reiniciado! Nivel ${level}`);
+    }
+
+    // Attach event listener to the restart button
+    restartBtn.addEventListener('click', initGame);
+
+    // Initialize the game when the page loads
+    initGame();
+  </script>
+</body>
+</html>
