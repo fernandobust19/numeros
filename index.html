@@ -661,8 +661,11 @@
       <button class="star-btn" aria-label="Usar comodín de barajar">⭐</button>
       <button class="star-btn" aria-label="Usar comodín de barajar">⭐</button>
     </div>
+    <div style="display: flex; align-items: center; gap: 4px;">
+      <button id="restartBtn">Reiniciar Juego</button>
+      <button id="fullscreenBtn" class="star-btn" title="Pantalla completa" style="font-size:18px;">⛶</button>
+    </div>
     <div id="noMovesMessage"></div> <!-- New element for "No hay movimientos" message -->
-    <button id="restartBtn">Reiniciar Juego</button>
   </div>
 
   <div class="container">
@@ -681,6 +684,22 @@
   <div id="messageBox" class="message-box"></div>
 
   <script>
+    // Pantalla completa
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    fullscreenBtn.addEventListener('click', () => {
+      const docElm = document.documentElement;
+      if (!document.fullscreenElement) {
+        if (docElm.requestFullscreen) docElm.requestFullscreen();
+        else if (docElm.mozRequestFullScreen) docElm.mozRequestFullScreen();
+        else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen();
+        else if (docElm.msRequestFullscreen) docElm.msRequestFullscreen();
+      } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+        else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        else if (document.msExitFullscreen) document.msExitFullscreen();
+      }
+    });
     // --- Sonidos ---
       const sndMerge = document.getElementById('snd-merge');
       const sndLevelup = document.getElementById('snd-levelup');
